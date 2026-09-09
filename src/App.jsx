@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { useStockfish } from './useStockfish';
 
-// Symboles Unicode des pièces d'échecs
 const UNICODE_PIECES = {
   P: '♙', R: '♖', N: '♘', B: '♗', Q: '♕', K: '♔',
   p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
@@ -13,10 +12,10 @@ export default function App() {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [skillLevel, setSkillLevel] = useState(5);
 
-  // Réception du coup joué par Stockfish
   const handleEngineMove = useCallback((move) => {
     setGame((prevGame) => {
-      const gameCopy = new Chess(prevGame.fen());
+      const gameCopy = new Chess();
+      if (prevGame.pgn()) gameCopy.loadPgn(prevGame.pgn());
       try {
         gameCopy.move(move);
       } catch (e) {
@@ -32,27 +31,25 @@ export default function App() {
     setDifficulty(skillLevel);
   }, [skillLevel, setDifficulty]);
 
-  // Déclenche le calcul de l'IA au tour des Noirs
   useEffect(() => {
     if (game.turn() === 'b' && !game.isGameOver()) {
       requestMove(game.fen(), 500);
     }
   }, [game, requestMove]);
 
-  // Gestion des clics : sélection puis déplacement
   function handleSquareClick(square) {
     if (game.turn() !== 'w' || game.isGameOver()) return;
 
     if (!selectedSquare) {
       const piece = game.get(square);
-      // Sélectionne uniquement si c'est une pièce blanche
       if (piece && piece.color === 'w') {
         setSelectedSquare(square);
       }
     } else {
-      // Tente d'exécuter le déplacement
       try {
-        const gameCopy = new Chess(game.fen());
+        const gameCopy = new Chess();
+        if (game.pgn()) gameCopy.loadPgn(game.pgn());
+
         const move = gameCopy.move({
           from: selectedSquare,
           to: square,
@@ -63,20 +60,31 @@ export default function App() {
           setGame(gameCopy);
         }
       } catch (e) {
-        // Coup illégal : on annule la sélection sans planter
+        // Coup illégal : sélection ignorée
       }
       setSelectedSquare(null);
     }
+  }
+
+  // Structuration de l'historique par tour (1. e4 e5)
+  const rawHistory = game.history();
+  const historyPairs = [];
+  for (let i = 0; i < rawHistory.length; i += 2) {
+    historyPairs.push({
+      number: Math.floor(i / 2) + 1,
+      white: rawHistory[i],
+      black: rawHistory[i + 1] || '',
+    });
   }
 
   const board = game.board();
   const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 
   return (
-    <div style={{ maxWidth: '450px', margin: '30px auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1>Les Fous du Roi ♟️</h1>
+    <div style={{ maxWidth: '750px', margin: '30px auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
+      <h1>Les Fous du Roi</h1>
 
-      <div style={{ marginBottom: '15px' }}>
+      <div style={{ marginBottom: '20px' }}>
         <label style={{ fontWeight: 'bold', marginRight: '10px' }}>
           Niveau IA (0 à 20) : {skillLevel}
         </label>
@@ -89,61 +97,104 @@ export default function App() {
         />
       </div>
 
-      {/* Grille Échiquier 8x8 */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(8, 1fr)',
-          width: '400px',
-          height: '400px',
-          margin: '0 auto',
-          border: '3px solid #333',
-          userSelect: 'none',
-        }}
-      >
-        {board.map((row, rowIndex) =>
-          row.map((cell, colIndex) => {
-            const square = `${files[colIndex]}${8 - rowIndex}`;
-            const isLight = (rowIndex + colIndex) % 2 === 0;
-            const isSelected = selectedSquare === square;
+      <div style={{ display: 'flex', gap: '25px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* Échiquier */}
+        <div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(8, 1fr)',
+              width: '400px',
+              height: '400px',
+              border: '3px solid #333',
+              userSelect: 'none',
+            }}
+          >
+            {board.map((row, rowIndex) =>
+              row.map((cell, colIndex) => {
+                const square = `${files[colIndex]}${8 - rowIndex}`;
+                const isLight = (rowIndex + colIndex) % 2 === 0;
+                const isSelected = selectedSquare === square;
 
-            let pieceSymbol = '';
-            if (cell) {
-              const key = cell.color === 'w' ? cell.type.toUpperCase() : cell.type;
-              pieceSymbol = UNICODE_PIECES[key];
-            }
+                let pieceSymbol = '';
+                if (cell) {
+                  const key = cell.color === 'w' ? cell.type.toUpperCase() : cell.type;
+                  pieceSymbol = UNICODE_PIECES[key];
+                }
 
-            return (
-              <div
-                key={square}
-                onClick={() => handleSquareClick(square)}
-                style={{
-                  width: '50px',
-                  height: '50px',
-                  backgroundColor: isSelected
-                    ? '#baca44'
-                    : isLight
-                    ? '#f0d9b5'
-                    : '#b58863',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '32px',
-                  cursor: 'pointer',
-                }}
-              >
-                {pieceSymbol}
-              </div>
-            );
-          })
-        )}
+                return (
+                  <div
+                    key={square}
+                    onClick={() => handleSquareClick(square)}
+                    style={{
+                      width: '50px',
+                      height: '50px',
+                      backgroundColor: isSelected
+                        ? '#baca44'
+                        : isLight
+                        ? '#f0d9b5'
+                        : '#b58863',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '32px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {pieceSymbol}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {game.isGameOver() && (
+            <h2 style={{ color: 'red', marginTop: '15px' }}>
+              {game.isCheckmate() ? 'Échec et mat !' : 'Partie terminée'}
+            </h2>
+          )}
+        </div>
+
+        {/* Panneau d'historique */}
+        <div
+          style={{
+            width: '220px',
+            height: '400px',
+            border: '2px solid #ccc',
+            borderRadius: '6px',
+            padding: '10px',
+            backgroundColor: '#fafafa',
+            display: 'flex',
+            flexDirection: 'column',
+            textAlign: 'left',
+            boxSizing: 'border-box',
+          }}
+        >
+          <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '16px' }}>
+            Historique
+          </h3>
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            <table style={{ width: '100%', fontSize: '14px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ color: '#777', borderBottom: '1px solid #eee' }}>
+                  <th style={{ textAlign: 'left', width: '30px', padding: '3px' }}>#</th>
+                  <th style={{ textAlign: 'left', padding: '3px' }}>Blancs</th>
+                  <th style={{ textAlign: 'left', padding: '3px' }}>Noirs</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyPairs.map((pair) => (
+                  <tr key={pair.number} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={{ color: '#999', padding: '3px' }}>{pair.number}.</td>
+                    <td style={{ fontWeight: '500', padding: '3px' }}>{pair.white}</td>
+                    <td style={{ padding: '3px' }}>{pair.black}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-      {game.isGameOver() && (
-        <h2 style={{ color: 'red', marginTop: '15px' }}>
-          {game.isCheckmate() ? 'Échec et mat !' : 'Partie terminée'}
-        </h2>
-      )}
     </div>
   );
 }

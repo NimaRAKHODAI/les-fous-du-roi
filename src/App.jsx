@@ -7,6 +7,22 @@ const UNICODE_PIECES = {
   p: '♟', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚',
 };
 
+
+// Dictionnaire de traduction des pièces
+const PIECE_TRANSLATION = {
+  K: 'R', // King -> Roi
+  Q: 'D', // Queen -> Dame
+  R: 'T', // Rook -> Tour
+  B: 'F', // Bishop -> Fou
+  N: 'C', // Knight -> Cavalier
+};
+
+// Fonction de conversion
+function toFrenchNotation(moveStr) {
+  if (!moveStr) return '';
+  return moveStr.replace(/[KQRBN]/g, (match) => PIECE_TRANSLATION[match]);
+}
+
 export default function App() {
   const [game, setGame] = useState(new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -186,8 +202,8 @@ export default function App() {
                 {historyPairs.map((pair) => (
                   <tr key={pair.number} style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ color: '#999', padding: '3px' }}>{pair.number}.</td>
-                    <td style={{ fontWeight: '500', padding: '3px' }}>{pair.white}</td>
-                    <td style={{ padding: '3px' }}>{pair.black}</td>
+                    <td style={{ fontWeight: '500', padding: '3px' }}>{toFrenchNotation(pair.white)}</td>
+                    <td style={{ padding: '3px' }}>{toFrenchNotation(pair.black)}</td>
                   </tr>
                 ))}
               </tbody>

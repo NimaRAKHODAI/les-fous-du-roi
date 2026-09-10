@@ -5,7 +5,7 @@ export function useStockfish(onBestMove) {
 
   useEffect(() => {
     // Initialisation du Web Worker Stockfish
-    const worker = new Worker('/stockfish.js');
+    const worker = new Worker(`${import.meta.env.BASE_URL}stockfish.js`);
     stockfishRef.current = worker;
 
     // Initialisation du protocole UCI

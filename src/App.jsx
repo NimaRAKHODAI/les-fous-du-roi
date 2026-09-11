@@ -23,6 +23,8 @@ function toFrenchNotation(moveStr) {
   return moveStr.replace(/[KQRBN]/g, (match) => PIECE_TRANSLATION[match]);
 }
 
+
+
 export default function App() {
   const [game, setGame] = useState(new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
@@ -82,6 +84,17 @@ export default function App() {
     }
   }
 
+  // Fonction pour réinitialiser le jeu
+  function resetGame(newColor) {
+    console.log('Nouvelle partie commencée !'); // s'affiche dans la console F12
+    setGame(new Chess());
+    setSelectedSquare(null);
+    // On s'assure qu'on ne passe la nouvelle couleur que si c'est une chaîne de caractères ('w' ou 'b')
+    if (typeof newColor === 'string') {
+      setPlayerColor(newColor);
+    }
+  }
+
   // Structuration de l'historique par tour (1. e4 e5)
   const rawHistory = game.history();
   const historyPairs = [];
@@ -112,6 +125,21 @@ export default function App() {
           onChange={(e) => setSkillLevel(Number(e.target.value))}
         />
       </div>
+
+      <button
+        onClick={() => resetGame()}
+        style={{
+          padding: '8px 16px',
+          backgroundColor: '#2c3e50',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+      >
+        Recommencer
+      </button>
 
       <div style={{ display: 'flex', gap: '25px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         {/* Échiquier */}

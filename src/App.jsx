@@ -4,6 +4,7 @@ import { Chessboard } from 'react-chessboard';
 import { ChessClock } from './components/ChessClock';
 import { GameOptions } from './components/GameOptions';
 import { HistoryPanel } from './components/HistoryPanel';
+import { CustomTimeForm } from './components/CustomTimeForm';
 import { useBoardSize } from './hooks/useBoardSize';
 import { useStockfish } from './hooks/useStockfish';
 import './App.css';
@@ -15,6 +16,13 @@ export default function App() {
   const [gameOver, setGameOver] = useState(null);
   const [gameKey, setGameKey] = useState(0);
   const [selectedSquare, setSelectedSquare] = useState(null);
+
+  // Configuration de la cadence (par défaut : 5 min + 3s d'incrément)
+  const [timeControl, setTimeControl] = useState({
+    initialSeconds: 300,
+    incrementSeconds: 3,
+    bonusOnMove40: 0,
+  });
 
   const { wrapperRef, boardWidth } = useBoardSize();
   const { getBestMove } = useStockfish();
@@ -61,6 +69,11 @@ export default function App() {
     setGameKey((prev) => prev + 1);
   };
 
+  const handleTimeControlChange = (newTimeControl) => {
+    setTimeControl(newTimeControl);
+    resetGame();
+  };
+
   const makeAMove = (moveData) => {
     try {
       const result = gameRef.current.move(moveData);
@@ -95,7 +108,6 @@ export default function App() {
     const currentPlayer = currentTurn === 'w' ? whitePlayer : blackPlayer;
     if (currentPlayer.type !== 'human') return;
 
-    // 1. Premier clic : sélection de la pièce
     if (!selectedSquare) {
       const piece = gameRef.current.get(square);
       if (piece && piece.color === currentTurn) {
@@ -104,13 +116,11 @@ export default function App() {
       return;
     }
 
-    // 2. Annulation si clic sur la même case
     if (selectedSquare === square) {
       setSelectedSquare(null);
       return;
     }
 
-    // 3. Deuxième clic : tentative de coup
     const movingPiece = gameRef.current.get(selectedSquare);
     const isPromotion =
       (movingPiece?.type === 'p' && square[1] === '8') ||
@@ -125,7 +135,6 @@ export default function App() {
     if (moveSuccess) {
       setSelectedSquare(null);
     } else {
-      // Si le coup échoue mais qu'on a cliqué sur une autre pièce de sa couleur
       const clickedPiece = gameRef.current.get(square);
       if (clickedPiece && clickedPiece.color === currentTurn) {
         setSelectedSquare(square);
@@ -169,15 +178,23 @@ export default function App() {
     <div className="main-container">
       <h1>Les Fous du Roi</h1>
 
-      <GameOptions
-        whitePlayer={whitePlayer}
-        setWhitePlayer={setWhitePlayer}
-        blackPlayer={blackPlayer}
-        setBlackPlayer={setBlackPlayer}
-        skillLevel={skillLevel}
-        setSkillLevel={setSkillLevel}
-        resetGame={resetGame}
-      />
+      <div className="top-options-bar">
+        <GameOptions
+          whitePlayer={whitePlayer}
+          setWhitePlayer={setWhitePlayer}
+          blackPlayer={blackPlayer}
+          setBlackPlayer={setBlackPlayer}
+          skillLevel={skillLevel}
+          setSkillLevel={setSkillLevel}
+          resetGame={resetGame}
+        />
+        
+        <CustomTimeForm
+          timeControl={timeControl}
+          onChangeTimeControl={handleTimeControlChange}
+          disabled={history.length > 0}
+        />
+      </div>
 
       <div className="game-layout">
         <div className="board-wrapper" ref={wrapperRef}>
@@ -197,6 +214,9 @@ export default function App() {
         <div className="right-panel" style={{ width: `${Math.min(260, boardWidth * 0.7)}px` }}>
           <ChessClock
             key={gameKey}
+            initialSeconds={timeControl.initialSeconds}
+            incrementSeconds={timeControl.incrementSeconds}
+            bonusOnMove40={timeControl.bonusOnMove40 || 0}
             turn={gameRef.current.turn()}
             isGameOver={Boolean(gameOver)}
             onTimeout={handleTimeout}

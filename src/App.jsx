@@ -1,93 +1,173 @@
-﻿import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useRef, useEffect } from 'react';
 import { Chess } from 'chess.js';
-import { useStockfish } from './useStockfish';
-import GameOptions from './components/GameOptions';
-import ChessboardView from './components/ChessboardView';
-import HistoryPanel from './components/HistoryPanel';
+import { Chessboard } from 'react-chessboard';
+import { ChessClock } from './components/ChessClock';
+import { GameOptions } from './components/GameOptions';
+import { HistoryPanel } from './components/HistoryPanel';
+import { useBoardSize } from './hooks/useBoardSize';
+import { useStockfish } from './hooks/useStockfish';
+import './App.css';
 
 export default function App() {
-  const [game, setGame] = useState(new Chess());
+  const gameRef = useRef(new Chess());
+  const [gamePosition, setGamePosition] = useState(gameRef.current.fen());
+  const [history, setHistory] = useState([]);
+  const [gameOver, setGameOver] = useState(null);
+  const [gameKey, setGameKey] = useState(0);
   const [selectedSquare, setSelectedSquare] = useState(null);
-  const [skillLevel, setSkillLevel] = useState(5);
 
-  const [whitePlayer, setWhitePlayer] = useState({ type: 'human', name: 'Joueur 1', aiModel: 'default' });
-  const [blackPlayer, setBlackPlayer] = useState({ type: 'ai', name: 'IA', aiModel: 'default' });
+  const { wrapperRef, boardWidth } = useBoardSize();
+  const { getBestMove } = useStockfish();
+  const [isThinking, setIsThinking] = useState(false);
 
-  const currentTurn = game.turn(); // 'w' ou 'b'
-  const currentPlayer = currentTurn === 'w' ? whitePlayer : blackPlayer;
+  const [whitePlayer, setWhitePlayer] = useState({
+    type: 'human',
+    name: 'Joueur 1',
+    aiModel: 'default',
+  });
 
-  const handleEngineMove = useCallback((move) => {
-    setGame((prevGame) => {
-      const gameCopy = new Chess();
-      if (prevGame.pgn()) gameCopy.loadPgn(prevGame.pgn());
-      try {
-        gameCopy.move(move);
-      } catch (e) {
-        console.error('Coup IA invalide :', e);
-      }
-      return gameCopy;
-    });
-  }, []);
+  const [blackPlayer, setBlackPlayer] = useState({
+    type: 'ai',
+    name: 'Stockfish',
+    aiModel: 'default',
+  });
 
-  const { requestMove, setDifficulty } = useStockfish(handleEngineMove);
+  const [skillLevel, setSkillLevel] = useState(10);
+  const historyHeight = Math.max(150, boardWidth - 80);
 
-  useEffect(() => {
-    setDifficulty(skillLevel);
-  }, [skillLevel, setDifficulty]);
-
-  useEffect(() => {
-    if (currentPlayer.type === 'ai' && !game.isGameOver()) {
-      requestMove(game.fen(), 500);
+  const getHistoryPairs = (historyList) => {
+    const pairs = [];
+    for (let i = 0; i < historyList.length; i += 2) {
+      pairs.push({
+        number: Math.floor(i / 2) + 1,
+        white: historyList[i],
+        black: historyList[i + 1] || '',
+      });
     }
-  }, [game, currentPlayer, requestMove]);
+    return pairs;
+  };
 
-  function handleSquareClick(square) {
-    if (currentPlayer.type !== 'human' || game.isGameOver()) return;
+  const handleTimeout = (winnerColor) => {
+    const winnerName = winnerColor === 'w' ? 'Blancs' : 'Noirs';
+    setGameOver({ winner: winnerName, reason: 'au temps' });
+  };
 
+  const resetGame = () => {
+    gameRef.current = new Chess();
+    setGamePosition(gameRef.current.fen());
+    setHistory([]);
+    setGameOver(null);
+    setSelectedSquare(null);
+    setGameKey((prev) => prev + 1);
+  };
+
+  const makeAMove = (moveData) => {
+    try {
+      const result = gameRef.current.move(moveData);
+
+      if (result) {
+        setGamePosition(gameRef.current.fen());
+        setHistory((prev) => [...prev, result.san]);
+
+        if (gameRef.current.isGameOver()) {
+          if (gameRef.current.isCheckmate()) {
+            setGameOver({
+              winner: gameRef.current.turn() === 'w' ? 'Noirs' : 'Blancs',
+              reason: 'échec et mat',
+            });
+          } else if (gameRef.current.isDraw()) {
+            setGameOver({ winner: null, reason: 'pat / égalité' });
+          }
+        }
+        return true;
+      }
+    } catch (e) {
+      return false;
+    }
+    return false;
+  };
+
+  // Gestion du clic unique (sélection + déplacement)
+  const onSquareClick = (square) => {
+    if (gameOver) return;
+
+    const currentTurn = gameRef.current.turn();
+    const currentPlayer = currentTurn === 'w' ? whitePlayer : blackPlayer;
+    if (currentPlayer.type !== 'human') return;
+
+    // 1. Premier clic : sélection de la pièce
     if (!selectedSquare) {
-      const piece = game.get(square);
+      const piece = gameRef.current.get(square);
       if (piece && piece.color === currentTurn) {
         setSelectedSquare(square);
       }
-    } else {
-      try {
-        const gameCopy = new Chess();
-        if (game.pgn()) gameCopy.loadPgn(game.pgn());
+      return;
+    }
 
-        const move = gameCopy.move({
-          from: selectedSquare,
-          to: square,
-          promotion: 'q',
+    // 2. Annulation si clic sur la même case
+    if (selectedSquare === square) {
+      setSelectedSquare(null);
+      return;
+    }
+
+    // 3. Deuxième clic : tentative de coup
+    const movingPiece = gameRef.current.get(selectedSquare);
+    const isPromotion =
+      (movingPiece?.type === 'p' && square[1] === '8') ||
+      (movingPiece?.type === 'p' && square[1] === '1');
+
+    const moveSuccess = makeAMove({
+      from: selectedSquare,
+      to: square,
+      ...(isPromotion && { promotion: 'q' }),
+    });
+
+    if (moveSuccess) {
+      setSelectedSquare(null);
+    } else {
+      // Si le coup échoue mais qu'on a cliqué sur une autre pièce de sa couleur
+      const clickedPiece = gameRef.current.get(square);
+      if (clickedPiece && clickedPiece.color === currentTurn) {
+        setSelectedSquare(square);
+      } else {
+        setSelectedSquare(null);
+      }
+    }
+  };
+
+  // Tour de l'IA Stockfish
+  useEffect(() => {
+    if (gameOver) return;
+
+    const currentTurn = gameRef.current.turn();
+    const currentPlayer = currentTurn === 'w' ? whitePlayer : blackPlayer;
+
+    if (currentPlayer.type === 'ai') {
+      let isMounted = true;
+      setIsThinking(true);
+
+      getBestMove(gameRef.current.fen(), skillLevel)
+        .then((bestMove) => {
+          if (isMounted) {
+            if (bestMove) {
+              makeAMove(bestMove);
+            }
+            setIsThinking(false);
+          }
+        })
+        .catch(() => {
+          if (isMounted) setIsThinking(false);
         });
 
-        if (move) {
-          setGame(gameCopy);
-        }
-      } catch (e) {
-        // Coup illégal
-      }
-      setSelectedSquare(null);
+      return () => {
+        isMounted = false;
+      };
     }
-  }
-
-  function resetGame() {
-    setGame(new Chess());
-    setSelectedSquare(null);
-  }
-
-  const rawHistory = game.history();
-  const historyPairs = [];
-  for (let i = 0; i < rawHistory.length; i += 2) {
-    historyPairs.push({
-      number: Math.floor(i / 2) + 1,
-      white: rawHistory[i],
-      black: rawHistory[i + 1] || '',
-    });
-  }
+  }, [gamePosition, whitePlayer, blackPlayer, gameOver, skillLevel]);
 
   return (
-    <div style={{ maxWidth: '750px', margin: '30px auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1>Les Fous du Roi ♟️</h1>
+    <div className="main-container">
+      <h1>Les Fous du Roi</h1>
 
       <GameOptions
         whitePlayer={whitePlayer}
@@ -99,13 +179,44 @@ export default function App() {
         resetGame={resetGame}
       />
 
-      <div style={{ display: 'flex', gap: '25px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <ChessboardView
-          game={game}
-          selectedSquare={selectedSquare}
-          onSquareClick={handleSquareClick}
-        />
-        <HistoryPanel historyPairs={historyPairs} />
+      <div className="game-layout">
+        <div className="board-wrapper" ref={wrapperRef}>
+          <Chessboard
+            position={gamePosition}
+            boardWidth={boardWidth}
+            onSquareClick={onSquareClick}
+            arePiecesDraggable={false}
+            customSquareStyles={{
+              ...(selectedSquare && {
+                [selectedSquare]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+              }),
+            }}
+          />
+        </div>
+
+        <div className="right-panel" style={{ width: `${Math.min(260, boardWidth * 0.7)}px` }}>
+          <ChessClock
+            key={gameKey}
+            turn={gameRef.current.turn()}
+            isGameOver={Boolean(gameOver)}
+            onTimeout={handleTimeout}
+          />
+
+          <div className="thinking-container">
+            {isThinking ? (
+              <span className="thinking-text">
+                <span className="dots-pulse"></span> Stockfish réfléchit…
+              </span>
+            ) : (
+              <span className="thinking-placeholder">&nbsp;</span>
+            )}
+          </div>
+
+          <HistoryPanel
+            historyPairs={getHistoryPairs(history)}
+            height={historyHeight}
+          />
+        </div>
       </div>
     </div>
   );

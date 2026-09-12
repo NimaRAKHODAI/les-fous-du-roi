@@ -1,4 +1,4 @@
-﻿export default function GameOptions({
+﻿export function GameOptions({
   whitePlayer,
   setWhitePlayer,
   blackPlayer,

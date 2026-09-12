@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+﻿import { useState, useCallback, useEffect } from 'react';
 import { Chess } from 'chess.js';
 import { useStockfish } from './useStockfish';
 import GameOptions from './components/GameOptions';
@@ -9,9 +9,12 @@ export default function App() {
   const [game, setGame] = useState(new Chess());
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [skillLevel, setSkillLevel] = useState(5);
-  const [playerColor, setPlayerColor] = useState('w');
 
-  const aiColor = playerColor === 'w' ? 'b' : 'w';
+  const [whitePlayer, setWhitePlayer] = useState({ type: 'human', name: 'Joueur 1', aiModel: 'default' });
+  const [blackPlayer, setBlackPlayer] = useState({ type: 'ai', name: 'IA', aiModel: 'default' });
+
+  const currentTurn = game.turn(); // 'w' ou 'b'
+  const currentPlayer = currentTurn === 'w' ? whitePlayer : blackPlayer;
 
   const handleEngineMove = useCallback((move) => {
     setGame((prevGame) => {
@@ -33,17 +36,17 @@ export default function App() {
   }, [skillLevel, setDifficulty]);
 
   useEffect(() => {
-    if (game.turn() === aiColor && !game.isGameOver()) {
+    if (currentPlayer.type === 'ai' && !game.isGameOver()) {
       requestMove(game.fen(), 500);
     }
-  }, [game, aiColor, requestMove]);
+  }, [game, currentPlayer, requestMove]);
 
   function handleSquareClick(square) {
-    if (game.turn() !== playerColor || game.isGameOver()) return;
+    if (currentPlayer.type !== 'human' || game.isGameOver()) return;
 
     if (!selectedSquare) {
       const piece = game.get(square);
-      if (piece && piece.color === playerColor) {
+      if (piece && piece.color === currentTurn) {
         setSelectedSquare(square);
       }
     } else {
@@ -67,15 +70,11 @@ export default function App() {
     }
   }
 
-  function resetGame(newColor = playerColor) {
+  function resetGame() {
     setGame(new Chess());
     setSelectedSquare(null);
-    if (typeof newColor === 'string') {
-      setPlayerColor(newColor);
-    }
   }
 
-  // Historique par tour
   const rawHistory = game.history();
   const historyPairs = [];
   for (let i = 0; i < rawHistory.length; i += 2) {
@@ -90,15 +89,16 @@ export default function App() {
     <div style={{ maxWidth: '750px', margin: '30px auto', textAlign: 'center', fontFamily: 'sans-serif' }}>
       <h1>Les Fous du Roi ♟️</h1>
 
-      {/* Barre d'options */}
       <GameOptions
+        whitePlayer={whitePlayer}
+        setWhitePlayer={setWhitePlayer}
+        blackPlayer={blackPlayer}
+        setBlackPlayer={setBlackPlayer}
         skillLevel={skillLevel}
         setSkillLevel={setSkillLevel}
-        playerColor={playerColor}
         resetGame={resetGame}
       />
 
-      {/* Échiquier et Panneau d'historique */}
       <div style={{ display: 'flex', gap: '25px', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         <ChessboardView
           game={game}

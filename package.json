@@ -11,19 +11,19 @@
   },
   "dependencies": {
     "chess.js": "^1.4.0",
-    "react": "^19.2.8",
-    "react-chessboard": "^5.12.1",
-    "react-dom": "^19.2.8"
+    "react": "^18.3.1",
+    "react-chessboard": "^4.7.2",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@vitejs/plugin-react": "^6.1.0",
-    "eslint": "^10.9.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.4",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^17.11.0",
-    "vite": "^8.2.2"
+    "vite": "^6.0.0"
   }
 }

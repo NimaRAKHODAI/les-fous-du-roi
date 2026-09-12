@@ -11,12 +11,12 @@ function toFrenchNotation(moveStr) {
   return moveStr.replace(/[KQRBN]/g, (match) => PIECE_TRANSLATION[match]);
 }
 
-export default function HistoryPanel({ historyPairs }) {
+export function HistoryPanel({ historyPairs, height = 290 }) {
   return (
-    <div
+      <div
       style={{
-        width: '220px',
-        height: '400px',
+        width: '100%',
+        height: `${height}px`,
         border: '2px solid #ccc',
         borderRadius: '6px',
         padding: '10px',
@@ -25,6 +25,7 @@ export default function HistoryPanel({ historyPairs }) {
         flexDirection: 'column',
         textAlign: 'left',
         boxSizing: 'border-box',
+        transition: 'height 0.2s ease',
       }}
     >
       <h3 style={{ margin: '0 0 10px 0', borderBottom: '1px solid #ddd', paddingBottom: '6px', fontSize: '16px' }}>

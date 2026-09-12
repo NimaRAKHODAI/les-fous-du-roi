@@ -1,7 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './ChessClock.css';
-
-const INITIAL_TIME = 20 * 60; // 20 minutes par joueur
 
 const playBeep = (frequency = 800, duration = 0.15) => {
   try {
@@ -21,13 +19,54 @@ const playBeep = (frequency = 800, duration = 0.15) => {
     osc.start();
     osc.stop(ctx.currentTime + duration);
   } catch (e) {
-    // Ignoré si bloqué par la politique d'interaction du navigateur
+    // Ignoré si bloqué par le navigateur
   }
 };
 
-export function ChessClock({ turn, isGameOver, onTimeout }) {
-  const [whiteTime, setWhiteTime] = useState(INITIAL_TIME);
-  const [blackTime, setBlackTime] = useState(INITIAL_TIME);
+export function ChessClock({
+  initialSeconds = 300,
+  incrementSeconds = 3,
+  bonusOnMove40 = 0,
+  turn,
+  isGameOver,
+  onTimeout,
+}) {
+  const [whiteTime, setWhiteTime] = useState(initialSeconds);
+  const [blackTime, setBlackTime] = useState(initialSeconds);
+  
+  const prevTurnRef = useRef(turn);
+  const whiteMovesCount = useRef(0);
+  const blackMovesCount = useRef(0);
+  const whiteBonusApplied = useRef(false);
+  const blackBonusApplied = useRef(false);
+
+  // Incrément Fischer et Ajout de temps au 40ème coup
+  useEffect(() => {
+    if (prevTurnRef.current !== turn && !isGameOver) {
+      if (prevTurnRef.current === 'w') {
+        whiteMovesCount.current += 1;
+        setWhiteTime((prev) => {
+          let next = prev + incrementSeconds;
+          if (bonusOnMove40 > 0 && whiteMovesCount.current === 40 && !whiteBonusApplied.current) {
+            next += bonusOnMove40;
+            whiteBonusApplied.current = true;
+          }
+          return next;
+        });
+      } else {
+        blackMovesCount.current += 1;
+        setBlackTime((prev) => {
+          let next = prev + incrementSeconds;
+          if (bonusOnMove40 > 0 && blackMovesCount.current === 40 && !blackBonusApplied.current) {
+            next += bonusOnMove40;
+            blackBonusApplied.current = true;
+          }
+          return next;
+        });
+      }
+      prevTurnRef.current = turn;
+    }
+  }, [turn, incrementSeconds, bonusOnMove40, isGameOver]);
 
   // Décompte chaque seconde du joueur actif
   useEffect(() => {
@@ -72,9 +111,15 @@ export function ChessClock({ turn, isGameOver, onTimeout }) {
     }
   }, [whiteTime, blackTime, turn]);
 
+  // Formatage du temps (prend en compte les heures si >= 1 heure)
   const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 

@@ -7,6 +7,7 @@ import { HistoryPanel } from './components/HistoryPanel';
 import { CustomTimeForm } from './components/CustomTimeForm';
 import { useBoardSize } from './hooks/useBoardSize';
 import { useStockfish } from './hooks/useStockfish';
+import { AI_PROFILES } from './constants/aiProfiles';
 import './App.css';
 
 export default function App() {
@@ -17,7 +18,6 @@ export default function App() {
   const [gameKey, setGameKey] = useState(0);
   const [selectedSquare, setSelectedSquare] = useState(null);
 
-  // Configuration de la cadence (par défaut : 5 min + 3s d'incrément)
   const [timeControl, setTimeControl] = useState({
     initialSeconds: 300,
     incrementSeconds: 3,
@@ -28,7 +28,6 @@ export default function App() {
   const { getBestMove } = useStockfish();
   const [isThinking, setIsThinking] = useState(false);
 
-  // Initialisation des états
   const [whitePlayer, setWhitePlayer] = useState({
     type: 'human',
     name: 'Joueur 1',
@@ -37,14 +36,12 @@ export default function App() {
 
   const [blackPlayer, setBlackPlayer] = useState({
     type: 'ai',
-    name: 'IA par défaut',
-    aiModel: 'default',
+    name: 'Paul Pousse-Pion',
+    aiModel: 'pousse_pion',
   });
 
-  const [skillLevel, setSkillLevel] = useState(10);
-
-  // Déterminer le joueur actif du tour courant
   const activePlayer = gameRef.current.turn() === 'w' ? whitePlayer : blackPlayer;
+  const currentAiLevel = AI_PROFILES.find((ai) => ai.id === activePlayer.aiModel)?.level ?? 10;
 
   const getHistoryPairs = (historyList) => {
     const pairs = [];
@@ -103,7 +100,6 @@ export default function App() {
     return false;
   };
 
-  // Gestion du clic unique (sélection + déplacement)
   const onSquareClick = (square) => {
     if (gameOver) return;
 
@@ -147,7 +143,6 @@ export default function App() {
     }
   };
 
-  // Tour de l'IA Stockfish
   useEffect(() => {
     if (gameOver) return;
 
@@ -158,7 +153,7 @@ export default function App() {
       let isMounted = true;
       setIsThinking(true);
 
-      getBestMove(gameRef.current.fen(), skillLevel)
+      getBestMove(gameRef.current.fen(), currentAiLevel)
         .then((bestMove) => {
           if (isMounted) {
             if (bestMove) {
@@ -175,32 +170,44 @@ export default function App() {
         isMounted = false;
       };
     }
-  }, [gamePosition, whitePlayer, blackPlayer, gameOver, skillLevel]);
+  }, [gamePosition, whitePlayer, blackPlayer, gameOver, currentAiLevel]);
+
+  const rightPanelWidth = Math.min(260, boardWidth * 0.7);
 
   return (
     <div className="main-container">
       <h1>Les Fous du Roi</h1>
 
-      <div className="top-options-bar">
-      <GameOptions
-        whitePlayer={whitePlayer}
-        setWhitePlayer={setWhitePlayer}
-        blackPlayer={blackPlayer}
-        setBlackPlayer={setBlackPlayer}
-        resetGame={resetGame}
-      />
-        
-        <CustomTimeForm
-          timeControl={timeControl}
-          onChangeTimeControl={handleTimeControlChange}
-          disabled={history.length > 0}
-        />
-      </div>
-
-      {/* Ensemble de jeu et barre de statut centrés */}
       <div className="game-container-wrapper">
+        {/* Configuration des Joueurs */}
+        <GameOptions
+          whitePlayer={whitePlayer}
+          setWhitePlayer={setWhitePlayer}
+          blackPlayer={blackPlayer}
+          setBlackPlayer={setBlackPlayer}
+        />
+
+        {/* Barre de commandes intermédiaire alignée sur les 2 colonnes du jeu */}
+        <div className="controls-bar-layout">
+          {/* Au-dessus de l'échiquier : bloc Cadence */}
+          <div className="board-header" style={{ width: `${boardWidth}px` }}>
+            <CustomTimeForm
+              timeControl={timeControl}
+              onChangeTimeControl={handleTimeControlChange}
+              disabled={history.length > 0}
+            />
+          </div>
+
+          {/* Au-dessus du bloc Clock : bouton Recommencer */}
+          <div className="panel-header" style={{ width: `${rightPanelWidth}px` }}>
+            <button className="reset-btn" onClick={resetGame}>
+              Recommencer
+            </button>
+          </div>
+        </div>
+
+        {/* Zone de jeu */}
         <div className="game-layout">
-          {/* Échiquier */}
           <div className="board-wrapper" ref={wrapperRef}>
             <Chessboard
               position={gamePosition}
@@ -215,11 +222,10 @@ export default function App() {
             />
           </div>
 
-          {/* Panneau latéral droit */}
           <div
             className="right-panel"
             style={{
-              width: `${Math.min(260, boardWidth * 0.7)}px`,
+              width: `${rightPanelWidth}px`,
               height: `${boardWidth}px`,
             }}
           >
@@ -240,7 +246,7 @@ export default function App() {
           </div>
         </div>
 
-        {/* Barre de statut sous l'ensemble du jeu */}
+        {/* Barre de statut */}
         <div className="status-bar">
           {isThinking ? (
             <span className="thinking-text">

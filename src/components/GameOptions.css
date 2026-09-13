@@ -1,0 +1,78 @@
+/* Conteneur principal des options de jeu */
+.game-options-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/* Carte de configuration pour un joueur (Blancs / Noirs) */
+.player-config-card {
+  background-color: #2a2d37;
+  border: 1px solid #3f4452;
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.player-config-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f39c12;
+  white-space: nowrap;
+}
+
+.config-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-field label {
+  font-size: 0.85rem;
+  color: #a0a5b5;
+  font-weight: 500;
+}
+
+/* Champ de texte personnalisé pour le nom du joueur */
+.player-input {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  border: 1px solid #3f4452;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 0.9rem;
+  width: 120px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.player-input:focus {
+  border-color: #f39c12;
+}
+
+/* Bouton Recommencer réaligné sur la charte graphique */
+.reset-game-btn {
+  background-color: #f39c12;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.reset-game-btn:hover {
+  background-color: #e67e22;
+}
+
+.reset-game-btn:active {
+  transform: scale(0.97);
+}

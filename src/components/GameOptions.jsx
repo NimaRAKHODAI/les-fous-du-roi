@@ -5,8 +5,6 @@ export function GameOptions({
   setWhitePlayer,
   blackPlayer,
   setBlackPlayer,
-  skillLevel,
-  setSkillLevel,
   resetGame,
 }) {
   return (
@@ -25,7 +23,6 @@ export function GameOptions({
                 setWhitePlayer({
                   ...whitePlayer,
                   type: newType,
-                  // Réinitialise le nom selon le type choisi
                   name: newType === 'ai' ? 'IA par défaut' : 'Joueur 1',
                 });
               }}
@@ -56,14 +53,11 @@ export function GameOptions({
                   setWhitePlayer({
                     ...whitePlayer,
                     aiModel: e.target.value,
-                    name: selectedLabel, // Prend le texte de l'option (ex: "IA par défaut")
+                    name: selectedLabel,
                   });
                 }}
               >
                 <option value="default">IA par défaut</option>
-                {/* Exemple d'autres modèles futurs : */}
-                {/* <option value="stockfish">Stockfish</option> */}
-                {/* <option value="qwen">Qwen 2.5</option> */}
               </select>
             </div>
           )}
@@ -111,13 +105,11 @@ export function GameOptions({
                   setBlackPlayer({
                     ...blackPlayer,
                     aiModel: e.target.value,
-                    name: selectedLabel, // Prend le texte de l'option
+                    name: selectedLabel,
                   });
                 }}
               >
                 <option value="default">IA par défaut</option>
-                {/* <option value="stockfish">Stockfish</option> */}
-                {/* <option value="qwen">Qwen 2.5</option> */}
               </select>
             </div>
           )}
@@ -125,34 +117,21 @@ export function GameOptions({
 
       </div>
 
-      {/* Niveau IA et Recommencer */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-        <div>
-          <label style={{ fontWeight: 'bold', marginRight: '8px' }}>Niveau IA : {skillLevel}</label>
-          <input
-            type="range"
-            min="0"
-            max="20"
-            value={skillLevel}
-            onChange={(e) => setSkillLevel(Number(e.target.value))}
-          />
-        </div>
-
-        <button
-          onClick={resetGame}
-          style={{
-            padding: '6px 14px',
-            backgroundColor: '#2c3e50',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-          }}
-        >
-          Recommencer
-        </button>
-      </div>
+      {/* Bouton Recommencer */}
+      <button
+        onClick={resetGame}
+        style={{
+          padding: '6px 14px',
+          backgroundColor: '#2c3e50',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+        }}
+      >
+        Recommencer
+      </button>
     </div>
   );
 }

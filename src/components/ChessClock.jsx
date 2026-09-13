@@ -23,6 +23,26 @@ const playBeep = (frequency = 800, duration = 0.15) => {
   }
 };
 
+function PlayerClock({ label, timeInSeconds, isActive, isLowTime }) {
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className={`player-clock-box ${isActive ? 'active' : ''} ${isLowTime ? 'low-time' : ''}`}>
+      <span className="player-label">{label}</span>
+      <span className="time-display">{formatTime(timeInSeconds)}</span>
+    </div>
+  );
+}
+
 export function ChessClock({
   initialSeconds = 300,
   incrementSeconds = 3,
@@ -30,17 +50,18 @@ export function ChessClock({
   turn,
   isGameOver,
   onTimeout,
+  children,
 }) {
   const [whiteTime, setWhiteTime] = useState(initialSeconds);
   const [blackTime, setBlackTime] = useState(initialSeconds);
-  
+
   const prevTurnRef = useRef(turn);
   const whiteMovesCount = useRef(0);
   const blackMovesCount = useRef(0);
   const whiteBonusApplied = useRef(false);
   const blackBonusApplied = useRef(false);
 
-  // Incrément Fischer et Ajout de temps au 40ème coup
+  // Incrément Fischer et bonus au 40ᵉ coup
   useEffect(() => {
     if (prevTurnRef.current !== turn && !isGameOver) {
       if (prevTurnRef.current === 'w') {
@@ -97,7 +118,7 @@ export function ChessClock({
     return () => clearInterval(timer);
   }, [turn, isGameOver, onTimeout]);
 
-  // Alerte sonore sous la minute et dans les 10 dernières secondes
+  // Alertes sonores
   useEffect(() => {
     if (turn === 'w' && whiteTime === 59) {
       playBeep(880, 0.25);
@@ -111,26 +132,45 @@ export function ChessClock({
     }
   }, [whiteTime, blackTime, turn]);
 
-  // Formatage du temps (prend en compte les heures si >= 1 heure)
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-
-    if (hours > 0) {
-      return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   return (
-    <div className="clock-container">
-      <div className={`player-clock ${turn === 'b' ? 'active' : ''} ${blackTime < 60 ? 'low-time' : ''}`}>
-        Noirs : {formatTime(blackTime)}
+    <div
+      className="chess-clock-vertical-wrapper"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%', // Remplit la hauteur totale de right-panel
+        justifyContent: 'space-between',
+        gap: '8px',
+      }}
+    >
+      {/* Horloge des Noirs */}
+      <PlayerClock
+        label="Noirs"
+        timeInSeconds={blackTime}
+        isActive={turn === 'b'}
+        isLowTime={blackTime < 60}
+      />
+
+      {/* Zone centrale (Conteneur de HistoryPanel) */}
+      <div
+        className="clock-middle-content"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minHeight: 0, // Indispensable pour forcer le flex-grow
+        }}
+      >
+        {children}
       </div>
-      <div className={`player-clock ${turn === 'w' ? 'active' : ''} ${whiteTime < 60 ? 'low-time' : ''}`}>
-        Blancs : {formatTime(whiteTime)}
-      </div>
+
+      {/* Horloge des Blancs */}
+      <PlayerClock
+        label="Blancs"
+        timeInSeconds={whiteTime}
+        isActive={turn === 'w'}
+        isLowTime={whiteTime < 60}
+      />
     </div>
   );
 }

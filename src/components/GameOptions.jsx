@@ -1,4 +1,6 @@
-﻿export function GameOptions({
+﻿// src/components/GameOptions.jsx
+
+export function GameOptions({
   whitePlayer,
   setWhitePlayer,
   blackPlayer,
@@ -10,6 +12,7 @@
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '20px', alignItems: 'center' }}>
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', justifyContent: 'center' }}>
+        
         {/* Configuration Blancs */}
         <div style={{ border: '1px solid #ccc', padding: '12px', borderRadius: '6px', textAlign: 'left', minWidth: '200px' }}>
           <h4 style={{ margin: '0 0 10px 0' }}>Blancs ♔</h4>
@@ -17,7 +20,15 @@
             <label style={{ marginRight: '6px' }}>Type :</label>
             <select
               value={whitePlayer.type}
-              onChange={(e) => setWhitePlayer({ ...whitePlayer, type: e.target.value })}
+              onChange={(e) => {
+                const newType = e.target.value;
+                setWhitePlayer({
+                  ...whitePlayer,
+                  type: newType,
+                  // Réinitialise le nom selon le type choisi
+                  name: newType === 'ai' ? 'IA par défaut' : 'Joueur 1',
+                });
+              }}
             >
               <option value="human">Joueur humain</option>
               <option value="ai">Joueur IA</option>
@@ -40,9 +51,19 @@
               <label style={{ marginRight: '6px' }}>IA :</label>
               <select
                 value={whitePlayer.aiModel}
-                onChange={(e) => setWhitePlayer({ ...whitePlayer, aiModel: e.target.value })}
+                onChange={(e) => {
+                  const selectedLabel = e.target.options[e.target.selectedIndex].text;
+                  setWhitePlayer({
+                    ...whitePlayer,
+                    aiModel: e.target.value,
+                    name: selectedLabel, // Prend le texte de l'option (ex: "IA par défaut")
+                  });
+                }}
               >
                 <option value="default">IA par défaut</option>
+                {/* Exemple d'autres modèles futurs : */}
+                {/* <option value="stockfish">Stockfish</option> */}
+                {/* <option value="qwen">Qwen 2.5</option> */}
               </select>
             </div>
           )}
@@ -55,7 +76,14 @@
             <label style={{ marginRight: '6px' }}>Type :</label>
             <select
               value={blackPlayer.type}
-              onChange={(e) => setBlackPlayer({ ...blackPlayer, type: e.target.value })}
+              onChange={(e) => {
+                const newType = e.target.value;
+                setBlackPlayer({
+                  ...blackPlayer,
+                  type: newType,
+                  name: newType === 'ai' ? 'IA par défaut' : 'Joueur 2',
+                });
+              }}
             >
               <option value="human">Joueur humain</option>
               <option value="ai">Joueur IA</option>
@@ -78,13 +106,23 @@
               <label style={{ marginRight: '6px' }}>IA :</label>
               <select
                 value={blackPlayer.aiModel}
-                onChange={(e) => setBlackPlayer({ ...blackPlayer, aiModel: e.target.value })}
+                onChange={(e) => {
+                  const selectedLabel = e.target.options[e.target.selectedIndex].text;
+                  setBlackPlayer({
+                    ...blackPlayer,
+                    aiModel: e.target.value,
+                    name: selectedLabel, // Prend le texte de l'option
+                  });
+                }}
               >
                 <option value="default">IA par défaut</option>
+                {/* <option value="stockfish">Stockfish</option> */}
+                {/* <option value="qwen">Qwen 2.5</option> */}
               </select>
             </div>
           )}
         </div>
+
       </div>
 
       {/* Niveau IA et Recommencer */}

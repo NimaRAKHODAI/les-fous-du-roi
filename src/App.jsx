@@ -28,6 +28,7 @@ export default function App() {
   const { getBestMove } = useStockfish();
   const [isThinking, setIsThinking] = useState(false);
 
+  // Initialisation des états
   const [whitePlayer, setWhitePlayer] = useState({
     type: 'human',
     name: 'Joueur 1',
@@ -36,12 +37,14 @@ export default function App() {
 
   const [blackPlayer, setBlackPlayer] = useState({
     type: 'ai',
-    name: 'Stockfish',
+    name: 'IA par défaut',
     aiModel: 'default',
   });
 
   const [skillLevel, setSkillLevel] = useState(10);
-  const historyHeight = Math.max(150, boardWidth - 80);
+
+  // Déterminer le joueur actif du tour courant
+  const activePlayer = gameRef.current.turn() === 'w' ? whitePlayer : blackPlayer;
 
   const getHistoryPairs = (historyList) => {
     const pairs = [];
@@ -196,46 +199,60 @@ export default function App() {
         />
       </div>
 
-      <div className="game-layout">
-        <div className="board-wrapper" ref={wrapperRef}>
-          <Chessboard
-            position={gamePosition}
-            boardWidth={boardWidth}
-            onSquareClick={onSquareClick}
-            arePiecesDraggable={false}
-            customSquareStyles={{
-              ...(selectedSquare && {
-                [selectedSquare]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
-              }),
-            }}
-          />
-        </div>
-
-        <div className="right-panel" style={{ width: `${Math.min(260, boardWidth * 0.7)}px` }}>
-          <ChessClock
-            key={gameKey}
-            initialSeconds={timeControl.initialSeconds}
-            incrementSeconds={timeControl.incrementSeconds}
-            bonusOnMove40={timeControl.bonusOnMove40 || 0}
-            turn={gameRef.current.turn()}
-            isGameOver={Boolean(gameOver)}
-            onTimeout={handleTimeout}
-          />
-
-          <div className="thinking-container">
-            {isThinking ? (
-              <span className="thinking-text">
-                <span className="dots-pulse"></span> Stockfish réfléchit…
-              </span>
-            ) : (
-              <span className="thinking-placeholder">&nbsp;</span>
-            )}
+      {/* Ensemble de jeu et barre de statut centrés */}
+      <div className="game-container-wrapper">
+        <div className="game-layout">
+          {/* Échiquier */}
+          <div className="board-wrapper" ref={wrapperRef}>
+            <Chessboard
+              position={gamePosition}
+              boardWidth={boardWidth}
+              onSquareClick={onSquareClick}
+              arePiecesDraggable={false}
+              customSquareStyles={{
+                ...(selectedSquare && {
+                  [selectedSquare]: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+                }),
+              }}
+            />
           </div>
 
-          <HistoryPanel
-            historyPairs={getHistoryPairs(history)}
-            height={historyHeight}
-          />
+          {/* Panneau latéral droit */}
+          <div
+            className="right-panel"
+            style={{
+              width: `${Math.min(260, boardWidth * 0.7)}px`,
+              height: `${boardWidth}px`,
+            }}
+          >
+            <ChessClock
+              key={gameKey}
+              initialSeconds={timeControl.initialSeconds}
+              incrementSeconds={timeControl.incrementSeconds}
+              bonusOnMove40={timeControl.bonusOnMove40 || 0}
+              turn={gameRef.current.turn()}
+              isGameOver={Boolean(gameOver)}
+              onTimeout={handleTimeout}
+            >
+              <HistoryPanel
+                historyPairs={getHistoryPairs(history)}
+                height="100%"
+              />
+            </ChessClock>
+          </div>
+        </div>
+
+        {/* Barre de statut sous l'ensemble du jeu */}
+        <div className="status-bar">
+          {isThinking ? (
+            <span className="thinking-text">
+              <span className="dots-pulse"></span> {activePlayer.name} réfléchit…
+            </span>
+          ) : (
+            <span className="status-text">
+              Trait aux {gameRef.current.turn() === 'w' ? 'Blancs' : 'Noirs'}
+            </span>
+          )}
         </div>
       </div>
     </div>

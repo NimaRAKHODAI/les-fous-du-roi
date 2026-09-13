@@ -182,15 +182,13 @@ export default function App() {
       <h1>Les Fous du Roi</h1>
 
       <div className="top-options-bar">
-        <GameOptions
-          whitePlayer={whitePlayer}
-          setWhitePlayer={setWhitePlayer}
-          blackPlayer={blackPlayer}
-          setBlackPlayer={setBlackPlayer}
-          skillLevel={skillLevel}
-          setSkillLevel={setSkillLevel}
-          resetGame={resetGame}
-        />
+      <GameOptions
+        whitePlayer={whitePlayer}
+        setWhitePlayer={setWhitePlayer}
+        blackPlayer={blackPlayer}
+        setBlackPlayer={setBlackPlayer}
+        resetGame={resetGame}
+      />
         
         <CustomTimeForm
           timeControl={timeControl}
